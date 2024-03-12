@@ -6,14 +6,23 @@ ARG KOHA_VERSION=23.11  # Adjust as needed
 ARG KOHA_PACKAGE=koha-common  # Adjust if installing a different Koha package
 
 # Update package lists and install dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
   wget \
   gnupg \
   apache2 \
   libapache2-mod-rewrite \
   libapache2-mod-headers \
   libapache2-mod-proxy-http \
-  libapache2-mod-cgi
+  libapache2-mod-cgi || \
+(apt-get clean && apt-get update && \
+apt-get install -y --no-install-recommends \
+  wget \
+  gnupg \
+  apache2 \
+  libapache2-mod-rewrite \
+  libapache2-mod-headers \
+  libapache2-mod-proxy-http \
+  libapache2-mod-cgi)
 
 # Add Koha repository (conditional on PKG_URL for future flexibility)
 RUN if [ "${KOHA_PACKAGE}" = "koha-common" ]; then \
@@ -39,3 +48,14 @@ RUN chmod +x /docker/entrypoint.sh
 
 # Set entrypoint (if using an entrypoint script)
 ENTRYPOINT ["/docker/entrypoint.sh"]
+
+# Enhanced build process (optional)
+
+# Retry logic for package installation
+# RUN apt-get update || { echo "Failed to update package lists."; exit 1; }
+# RUN apt-get install -y wget gnupg apache2 ... || { echo "Failed to install packages."; exit 1; }
+
+# Error handling (optional)
+# RUN echo "Installing dependencies..."
+# RUN apt-get update && apt-get install -y --no-install-recommends ... || (echo "An error occurred while installing dependencies."; exit 1)
+
