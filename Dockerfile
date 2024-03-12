@@ -1,8 +1,8 @@
 # Base image with Koha compatibility
-FROM debian:buster-slim
+FROM debian:buster
 
 # Environment variables (optional)
-ARG KOHA_VERSION=23.11  # Adjust as needed
+ARG KOHA_VERSION=22.05  # Adjust as needed
 ARG KOHA_PACKAGE=koha-common  # Adjust if installing a different Koha package
 
 # Update package lists and install dependencies
