@@ -27,7 +27,10 @@ RUN apt-get update || (echo "Failed to update package lists."; exit 1)
 RUN apt-get install -y "${KOHA_PACKAGE}"
 
 # Apache configuration (consider these examples as a starting point)
-RUN a2enmod rewrite headers proxy_http cgi
+RUN a2enmod rewrite
+RUN a2enmod headers
+RUN a2enmod proxy_http
+RUN a2enmod cgi
 RUN a2dissite 000-default
 
 # Create directory for entrypoint script (optional)
@@ -41,8 +44,3 @@ RUN chmod +x /docker/entrypoint.sh
 
 # Set entrypoint (if using an entrypoint script)
 ENTRYPOINT ["/docker/entrypoint.sh"]
-
-# Error handling (optional)
-# RUN echo "Installing dependencies..."
-# RUN apt-get update && apt-get install -y --no-install-recommends ... || (echo "An error occurred while installing dependencies."; exit 1)
-
