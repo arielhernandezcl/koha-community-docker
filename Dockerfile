@@ -1,46 +1,44 @@
-# Base image with Koha compatibility
+# Base image with Debian Buster
 FROM debian:buster-slim
 
-# Environment variables (optional)
-ARG KOHA_VERSION=23.11  # Adjust as needed
-ARG KOHA_PACKAGE=koha-common  # Adjust if installing a different Koha package
+# Actualizar los paquetes e instalar Apache y otros paquetes necesarios
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    apache2 \
+    libapache2-mod-rewrite \
+    libapache2-mod-headers \
+    libapache2-mod-proxy-http \
+    libapache2-mod-cgi \
+    wget \
+    gnupg && \
+    rm -rf /var/lib/apt/lists/*
 
-# Retry logic for package installation
-RUN apt-get update || (echo "Failed to update package lists."; exit 1)
-RUN apt-get install -y --no-install-recommends \
-  wget \
-  gnupg \
-  apache2 \
-  libapache2-mod-rewrite \
-  libapache2-mod-headers \
-  libapache2-mod-proxy-http \
-  libapache2-mod-cgi || (echo "An error occurred while installing dependencies."; exit 1)
+# Agregar repositorio de Koha e instalar Koha
+ARG KOHA_VERSION=23.11
+RUN wget -q -O- https://debian.koha-community.org/koha/gpg.asc | apt-key add - && \
+    echo "deb https://debian.koha-community.org/koha ${KOHA_VERSION} main" | tee /etc/apt/sources.list.d/koha.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+    koha-common && \
+    rm -rf /var/lib/apt/lists/*
 
-# Add Koha repository (conditional on PKG_URL for future flexibility)
-RUN if [ "${KOHA_PACKAGE}" = "koha-common" ]; then \
-        wget -q -O- https://debian.koha-community.org/koha/gpg.asc | apt-key add -; \
-        echo "deb https://debian.koha-community.org/koha ${KOHA_VERSION} main" | tee /etc/apt/sources.list.d/koha.list; \
-    fi
+# Habilitar los módulos de Apache necesarios
+RUN a2enmod rewrite headers proxy_http cgi
 
-# Update package lists again and install Koha package
-RUN apt-get update || (echo "Failed to update package lists."; exit 1)
-RUN apt-get install -y "${KOHA_PACKAGE}"
-
-# Apache configuration (consider these examples as a starting point)
-RUN a2enmod rewrite
-RUN a2enmod headers
-RUN a2enmod proxy_http
-RUN a2enmod cgi
+# Deshabilitar el sitio predeterminado de Apache
 RUN a2dissite 000-default
 
-# Create directory for entrypoint script (optional)
+# Crear directorio para el script de entrada
 RUN mkdir /docker
 
-# Copy entrypoint script (assuming it exists)
+# Copiar el script de entrada
 COPY entrypoint.sh /docker/
 
-# Make entrypoint script executable (if applicable)
+# Establecer permisos de ejecución para el script de entrada
 RUN chmod +x /docker/entrypoint.sh
 
-# Set entrypoint (if using an entrypoint script)
+# Establecer el script de entrada
 ENTRYPOINT ["/docker/entrypoint.sh"]
+
+# Exponer el puerto 80 para Apache
+EXPOSE 80
