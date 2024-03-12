@@ -1,28 +1,20 @@
 # Base image with Koha compatibility
-FROM debian:buster
+FROM debian:buster-slim
 
 # Environment variables (optional)
-ARG KOHA_VERSION=22.05  # Adjust as needed
+ARG KOHA_VERSION=23.11  # Adjust as needed
 ARG KOHA_PACKAGE=koha-common  # Adjust if installing a different Koha package
 
-# Update package lists and install dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Retry logic for package installation
+RUN apt-get update || (echo "Failed to update package lists."; exit 1)
+RUN apt-get install -y --no-install-recommends \
   wget \
   gnupg \
   apache2 \
   libapache2-mod-rewrite \
   libapache2-mod-headers \
   libapache2-mod-proxy-http \
-  libapache2-mod-cgi || \
-(apt-get clean && apt-get update && \
-apt-get install -y --no-install-recommends \
-  wget \
-  gnupg \
-  apache2 \
-  libapache2-mod-rewrite \
-  libapache2-mod-headers \
-  libapache2-mod-proxy-http \
-  libapache2-mod-cgi)
+  libapache2-mod-cgi || (echo "An error occurred while installing dependencies."; exit 1)
 
 # Add Koha repository (conditional on PKG_URL for future flexibility)
 RUN if [ "${KOHA_PACKAGE}" = "koha-common" ]; then \
@@ -31,7 +23,8 @@ RUN if [ "${KOHA_PACKAGE}" = "koha-common" ]; then \
     fi
 
 # Update package lists again and install Koha package
-RUN apt-get update && apt-get install -y "${KOHA_PACKAGE}"
+RUN apt-get update || (echo "Failed to update package lists."; exit 1)
+RUN apt-get install -y "${KOHA_PACKAGE}"
 
 # Apache configuration (consider these examples as a starting point)
 RUN a2enmod rewrite headers proxy_http cgi
@@ -48,12 +41,6 @@ RUN chmod +x /docker/entrypoint.sh
 
 # Set entrypoint (if using an entrypoint script)
 ENTRYPOINT ["/docker/entrypoint.sh"]
-
-# Enhanced build process (optional)
-
-# Retry logic for package installation
-# RUN apt-get update || { echo "Failed to update package lists."; exit 1; }
-# RUN apt-get install -y wget gnupg apache2 ... || { echo "Failed to install packages."; exit 1; }
 
 # Error handling (optional)
 # RUN echo "Installing dependencies..."
