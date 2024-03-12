@@ -27,8 +27,6 @@ RUN mkdir /docker
 
 COPY entrypoint.sh /docker/
 
-COPY templates /docker/templates
-
 RUN chmod +x /docker/entrypoint.sh
 
 ENTRYPOINT ["/docker/entrypoint.sh"]
